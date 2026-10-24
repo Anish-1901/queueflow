@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    command: node dist/server.js
+    ports:
+      - "3000:3000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=queue_system
+    depends_on:
+      - redis
+      - postgres
+
+  worker:
+    build: .
+    command: node dist/worker.js
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=queue_system
+    depends_on:
+      - redis
+      - postgres
+    deploy:
+      replicas: 2
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=queue_system
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
